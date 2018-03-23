@@ -42,6 +42,7 @@ import java.util.List;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
     private static final String TAG = "Client";
 
+    //The permissions needed inorder to use application
     String[] permissions = {
             Manifest.permission.BLUETOOTH_ADMIN,
             Manifest.permission.BLUETOOTH,
@@ -104,6 +105,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     markerGPS.remove();
                 }
 
+                //Place location on google maps
                 LatLng gpsLocation = new LatLng(gpsManager.getLatitude(), gpsManager.getLongitude());
                 markerGPS = mMap.addMarker(new MarkerOptions().position(gpsLocation).title("GPS Location"));
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(gpsLocation, 13));
@@ -163,6 +165,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         super.onDestroy();
     }
 
+    //onClick for BLE Scanning
     public void startScanning(View view) {
         Toast.makeText(this, "Begin Scanning", Toast.LENGTH_SHORT).show();
         proximityManager.connect(new OnServiceReadyListener() {
@@ -174,6 +177,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+    //Listner to get the beacons
     private IBeaconListener createIBeaconListener() {
         return new SimpleIBeaconListener() {
             @Override
@@ -183,13 +187,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
                 Log.i("Sample", "IBeacons discovered" + iBeacons.toString());
 
-                print(iBeacons);
+                getBeaconLocation(iBeacons);
 
                 calculateCentroid();
             }
         };
     }
 
+    //Getting the coordinates for the recevied beacson.
     ArrayList<BLECoordinate> info = new ArrayList<>();
     private void getBLECoordinates(){
         info.clear();
@@ -211,7 +216,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     ArrayList<BLECoordinate> results = new ArrayList<>();
     ArrayList<String> displayInfo = new ArrayList<>();
 
-    private void print(List<IBeaconDevice> list){
+    private void getBeaconLocation(List<IBeaconDevice> list){
         for (int i = 0; i < list.size(); i++) {
             String unique = list.get(i).getUniqueId();
 
@@ -238,7 +243,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-
+    //Calculating the Centroid from the Beacon Coordinates.
     private void calculateCentroid(){
         latPos = 0.0;
         lngPos = 0.0;
@@ -255,6 +260,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         });
 
+        //Making sure the number of beacons are more than 1 for calculation
         if(results.size() > 1){
             for(int i = 0; i < results.size();i++){
                 latPos += results.get(i).getLat() * avgDistanceLim(i);
@@ -264,6 +270,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             lngPos = lngPos / ((results.size()-1) * avgDistance());
 
         }else{
+            //In case the number of beacons is one, the beacon's coordinates will be shown.
             latPos = results.get(0).getLat();
             lngPos = results.get(0).getLng();
         }
@@ -286,6 +293,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
+    //From the Equation shown in the Rapport, this method calculates the numerator
     private double avgDistanceLim(int subtract) {
         double avg = 0;
         for (int i =0; i < results.size();i++) {
@@ -295,6 +303,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return avg;
     }
 
+    //From the Equation shown in the Rapport, this method calculates the denominator
     private double avgDistance() {
         double avg = 0;
         for (int i =0; i < results.size();i++) {

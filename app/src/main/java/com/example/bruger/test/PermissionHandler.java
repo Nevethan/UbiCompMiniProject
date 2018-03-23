@@ -1,7 +1,7 @@
 package com.example.bruger.test;
 
 /**
- * Created by Bruger on 23-03-2018.
+ * Created by Neala13, emfri013 and makja03
  */
 
 import android.Manifest;
@@ -57,7 +57,6 @@ public class PermissionHandler extends AppCompatActivity {
 
                 break;
             case BLUETOOTH_REQUEST_CODE:
-
 
                 break;
         }

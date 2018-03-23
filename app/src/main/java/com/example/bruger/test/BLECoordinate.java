@@ -1,7 +1,7 @@
 package com.example.bruger.test;
 
 /**
- * Created by Bruger on 22-03-2018.
+ * Created by Neala13, emfri013 and makja03
  */
 
 public class BLECoordinate {
