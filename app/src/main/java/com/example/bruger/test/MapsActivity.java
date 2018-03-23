@@ -89,6 +89,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         TV_GPS = findViewById(R.id.TV_GPS);
         TV_BLE = findViewById(R.id.TV_BLE);
 
+        //button listner for the GPS location.
         btn_GetGPSLocation.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -99,13 +100,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 TV_GPS.setText("(" + String.valueOf(gpsManager.getLatitude()) + ", " + String.valueOf(gpsManager.getLongitude()) + ")");
 
-                if(markerGPS != null){
+                if (markerGPS != null) {
                     markerGPS.remove();
                 }
 
                 LatLng gpsLocation = new LatLng(gpsManager.getLatitude(), gpsManager.getLongitude());
                 markerGPS = mMap.addMarker(new MarkerOptions().position(gpsLocation).title("GPS Location"));
-                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(gpsLocation,13));
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(gpsLocation, 13));
 
             }
         });
@@ -281,7 +282,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 BitmapDescriptorFactory.HUE_AZURE
         )));
 
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(gpsLocation,13));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(gpsLocation,14));
 
     }
 
