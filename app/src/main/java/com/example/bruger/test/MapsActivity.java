@@ -20,6 +20,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -62,9 +63,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private GoogleMap mMap;
 
+    private PermissionHandler PMH;
+
     private ProximityManager proximityManager;
 
     private Marker markerGPS, markerBLE;
+
+    private double latPos, lngPos;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,11 +93,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onClick(View v) {
                 Log.i(TAG, "GPS - Button Pressed");
+                PMH = new PermissionHandler();
                 gpsManager = new GPSManager(mainContext, mainActivity);
+                PMH.LocationCheck(mainContext, mainActivity);
 
-                //PMH.LocationCheck(mainContext, mainActivity);
-                TV_GPS.setText("(" + String.valueOf(gpsManager.getLatitude()) + ", " + String.valueOf(gpsManager.getLongitude()) + ")" + "\n"
-                + "Precision of GPS " + " " + String.valueOf(gpsManager.getPrecision()));
+                TV_GPS.setText("(" + String.valueOf(gpsManager.getLatitude()) + ", " + String.valueOf(gpsManager.getLongitude()) + ")");
 
                 if(markerGPS != null){
                     markerGPS.remove();
@@ -104,6 +109,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
             }
         });
+
+        //Get the coordinates for BLE Beacons - The coordinates are for the rooms that contains the beacons
+        getBLECoordinates();
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -165,9 +173,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-    List<IBeaconDevice> blist;
-    //ArrayAdapter<String> adapter;
-
     private IBeaconListener createIBeaconListener() {
         return new SimpleIBeaconListener() {
             @Override
@@ -176,6 +181,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     Log.i("Sample", "IBeacons discovered" + iBeacons.get(i).getUniqueId() + " " + iBeacons.get(i).getDistance());
                 }
                 Log.i("Sample", "IBeacons discovered" + iBeacons.toString());
+
                 print(iBeacons);
 
                 calculateCentroid();
@@ -185,6 +191,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     ArrayList<BLECoordinate> info = new ArrayList<>();
     private void getBLECoordinates(){
+        info.clear();
         info.add(new BLECoordinate("QP9Y", 55.3674408, 10.4306835));
         info.add(new BLECoordinate("S5XN", 55.3675119, 10.4306739));
         info.add(new BLECoordinate("27wH", 55.3672236, 10.4307125));
@@ -201,89 +208,87 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     ArrayList<BLECoordinate> results = new ArrayList<>();
-    private void print(List<IBeaconDevice> list){
-        //Get the coordinates for BLE Beacons - The coordinates are for the rooms that contains the beacons
-        ArrayList<String> displayInfo = new ArrayList<>();
-        getBLECoordinates();
+    ArrayList<String> displayInfo = new ArrayList<>();
 
-        for(int i = 0; i < list.size(); i++){
+    private void print(List<IBeaconDevice> list){
+        for (int i = 0; i < list.size(); i++) {
             String unique = list.get(i).getUniqueId();
 
-            for(int j = 0; j < info.size(); j++){
-                if(info.get(j).getName().equals(unique)){
+            for (int j = 0; j < info.size(); j++) {
+                if (info.get(j).getName().equals(unique)) {
+                    String name = info.get(j).getName();
                     double lat = info.get(j).getLat();
                     double lng = info.get(j).getLng();
                     double distance = list.get(i).getDistance();
 
-                    results.add(new BLECoordinate(lat,lng,distance));
+                    if(!displayInfo.contains(unique)){
+                        results.add(new BLECoordinate(name,lat,lng,distance));
+                        displayInfo.add(unique);
+                    }
 
-                    displayInfo.add(unique);
                 }
             }
         }
 
+
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
                 android.R.layout.simple_list_item_1, android.R.id.text1, displayInfo);
         listview.setAdapter(adapter);
+
     }
 
-    private double latPos, lngPos;
+
     private void calculateCentroid(){
+        latPos = 0.0;
+        lngPos = 0.0;
+
+        //Beacon with the lowest distance comes first in the list.
         Collections.sort(results, new Comparator<BLECoordinate>() {
             @Override
             public int compare(BLECoordinate bleCoordinate, BLECoordinate t1) {
                 if(bleCoordinate.getDistance() < t1.getDistance()){
-                    return 1;
-                }else{
                     return 0;
+                }else{
+                    return 1;
                 }
             }
         });
 
         if(results.size() > 1){
             for(int i = 0; i < results.size();i++){
-                latPos =+ results.get(i).getLat() * avgDistanceLim(i);
-                lngPos =+ results.get(i).getLng() * avgDistanceLim(i);
+                latPos += results.get(i).getLat() * avgDistanceLim(i);
+                lngPos += results.get(i).getLng() * avgDistanceLim(i);
             }
-            latPos = latPos / 2 * avgDistance();
-            lngPos = lngPos / 2 * avgDistance();
+            latPos = latPos / ((results.size()-1) * avgDistance());
+            lngPos = lngPos / ((results.size()-1) * avgDistance());
 
         }else{
             latPos = results.get(0).getLat();
             lngPos = results.get(0).getLng();
         }
 
-        /*if(results.size() > 2){
-            xPos = ((results.get(0).getLat() * ((1/results.get(1).getDistance())/(1/results.get(2).getDistance()))
-                    + (results.get(1).getLat() * ((1/results.get(2).getDistance())/(1/results.get(0).getDistance()))
-                    + (results.get(2).getLat() * ((1/results.get(0).getDistance())/(1/results.get(1).getDistance()))))))
-                    / 2 * ((1/results.get(0).getDistance()) + (1/results.get(1).getDistance()) + (1/results.get(2).getDistance()));
 
-            yPos = (results.get(0).getLng() * ((1/results.get(1).getDistance())/(1/results.get(2).getDistance()))
-                    + (results.get(1).getLng() * ((1/results.get(2).getDistance())/(1/results.get(0).getDistance()))
-                    + (results.get(2).getLng() * ((1/results.get(0).getDistance())/(1/results.get(1).getDistance())))))
-                    / 2 * ((1/results.get(0).getDistance()) + (1/results.get(1).getDistance()) + (1/results.get(2).getDistance()));
+        TV_BLE.setText("(" + String.valueOf(latPos) + ", " + String.valueOf(lngPos) + ")");
 
-        }*/
-
-        TV_BLE.setText("Test");
-        //TV_BLE.setText("(" + String.valueOf(latPos) + ", " + String.valueOf(lngPos) + ")");
+        Log.i("Sample", "Centroid " + String.valueOf(latPos) + " " + String.valueOf(lngPos));
 
         if(markerBLE != null){
             markerBLE.remove();
         }
 
         LatLng gpsLocation = new LatLng(latPos, lngPos);
-        markerBLE = mMap.addMarker(new MarkerOptions().position(gpsLocation).title("BLE Location"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(gpsLocation,13));
+        markerBLE = mMap.addMarker(new MarkerOptions().position(gpsLocation).title("BLE Location").icon(BitmapDescriptorFactory.defaultMarker(
+                BitmapDescriptorFactory.HUE_AZURE
+        )));
 
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(gpsLocation,13));
 
     }
 
     private double avgDistanceLim(int subtract) {
         double avg = 0;
-        for (int i =0; i<results.size();i++) {
-            avg =+ 1 / results.get(i).getDistance();
+        for (int i =0; i < results.size();i++) {
+            avg += (1 / results.get(i).getDistance());
         }
         avg = avg - (1 / results.get(subtract).getDistance());
         return avg;
@@ -291,7 +296,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private double avgDistance() {
         double avg = 0;
-        for (int i =0; i<results.size();i++) {
+        for (int i =0; i < results.size();i++) {
             avg += 1 / results.get(i).getDistance();
         }
         return avg;
@@ -309,7 +314,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         System.out.println("All granted");
         return true;
     }
-
 
     private void requestPermissions() {
         ActivityCompat.requestPermissions(this,permissions, 1);

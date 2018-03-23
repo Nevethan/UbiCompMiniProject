@@ -1,6 +1,5 @@
 package com.example.bruger.test;
 
-
 import android.app.Activity;
 import android.app.Service;
 import android.content.Context;
@@ -14,11 +13,13 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 /**
- * Created by Bruger on 19-03-2018.
+ * This class handles all the backend calls to the GPS and its services
+ * I also handles the saving and location of previous information
  */
+
 public class GPSManager extends Service implements LocationListener {
 
-    //PermissionHandler PMH = new PermissionHandler();
+    PermissionHandler PMH = new PermissionHandler();
     private static final String TAG = "GPS&BLE";
 
     private Context context;
@@ -82,7 +83,7 @@ public class GPSManager extends Service implements LocationListener {
 
     @SuppressWarnings({"ResourceType"})
     private void GetLocation(){
-        //PMH.LocationCheck(context, activity);
+        PMH.LocationCheck(context, activity);
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,MIN_TIME_BW_UPDATES,MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
         location = locationManager.getLastKnownLocation(locationManager.GPS_PROVIDER);
     }
@@ -113,4 +114,3 @@ public class GPSManager extends Service implements LocationListener {
 
     }
 }
-

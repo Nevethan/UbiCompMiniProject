@@ -14,7 +14,8 @@ public class BLECoordinate {
         this.lng = lng;
     }
 
-    public BLECoordinate(double lat, double lng, double distance){
+    public BLECoordinate(String name, double lat, double lng, double distance){
+        this.name = name;
         this.lat = lat;
         this.lng = lng;
         this.distance = distance;
